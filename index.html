@@ -5,28 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bingo Game</title>
     <style>
+        body.dark-mode { background-color: #222; color: white; }
         table { border-collapse: collapse; margin: 20px auto; }
         th, td { border: 1px solid black; padding: 10px; text-align: center; cursor: pointer; }
         .marked { background-color: yellow; }
+        .winning { background-color: lightgreen; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 2px solid black; }
+        .dark-mode .modal { background: #444; color: white; border-color: white; }
     </style>
 </head>
 <body>
+    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+    <div id="bingo-modal" class="modal">
+        <p>Bingo! You won!</p>
+        <button onclick="closeModal()">Close</button>
+    </div>
     <script>
+        let tableCells = [];
+        
         const generateBingoCard = (phrases) => {
-            let card = [];
             let shuffledPhrases = phrases.sort(() => 0.5 - Math.random()).slice(0, 25);
-            
+            let card = [];
             for (let i = 0; i < 5; i++) {
                 card.push(shuffledPhrases.slice(i * 5, (i + 1) * 5));
             }
-            
             return card;
         };
-
+        
+        const checkWinCondition = () => {
+            for (let i = 0; i < 5; i++) {
+                if (tableCells[i].every(cell => cell.classList.contains("marked"))) return highlightWin(tableCells[i]);
+                if (tableCells.every(row => row[i].classList.contains("marked"))) return highlightWin(tableCells.map(row => row[i]));
+            }
+            if (tableCells.every((row, idx) => row[idx].classList.contains("marked"))) return highlightWin(tableCells.map((row, idx) => row[idx]));
+            if (tableCells.every((row, idx) => row[4 - idx].classList.contains("marked"))) return highlightWin(tableCells.map((row, idx) => row[4 - idx]));
+        };
+        
+        const highlightWin = (winningCells) => {
+            winningCells.forEach(cell => cell.classList.add("winning"));
+            document.getElementById("bingo-modal").style.display = "block";
+        };
+        
         const renderBingoCard = (card) => {
             let table = document.createElement("table");
             let letters = ["B", "I", "N", "G", "O"];
             let headerRow = document.createElement("tr");
+            tableCells = [];
             letters.forEach(letter => {
                 let th = document.createElement("th");
                 th.innerText = letter;
@@ -36,18 +60,30 @@
             
             for (let i = 0; i < 5; i++) {
                 let row = document.createElement("tr");
+                tableCells[i] = [];
                 for (let j = 0; j < 5; j++) {
                     let cell = document.createElement("td");
                     cell.innerText = card[i][j];
-                    cell.addEventListener("click", () => cell.classList.toggle("marked"));
+                    cell.addEventListener("click", () => {
+                        cell.classList.toggle("marked");
+                        checkWinCondition();
+                    });
+                    tableCells[i].push(cell);
                     row.appendChild(cell);
                 }
                 table.appendChild(row);
             }
-            
             document.body.appendChild(table);
         };
-
+        
+        const toggleDarkMode = () => {
+            document.body.classList.toggle("dark-mode");
+        };
+        
+        const closeModal = () => {
+            document.getElementById("bingo-modal").style.display = "none";
+        };
+        
         document.addEventListener("DOMContentLoaded", () => {
             let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump", "Absolutely", "Never", "Why not?", "Exactly", "Interesting", "Tell me more", "I see", "Not sure", "Of course", "Let's go", "Cool", "Sounds good", "No way", "Unbelievable", "Fantastic", "Incredible", "Wow"];
             let card = generateBingoCard(phrases);
