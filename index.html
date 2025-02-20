@@ -20,8 +20,10 @@
         <p>Bingo! You won!</p>
         <button onclick="closeModal()">Close</button>
     </div>
+    <p>Wins: <span id="win-counter">0</span></p>
     <script>
         let tableCells = [];
+        let winCount = 0;
         
         const generateBingoCard = (phrases) => {
             let shuffledPhrases = phrases.sort(() => 0.5 - Math.random()).slice(0, 25);
@@ -44,6 +46,8 @@
         const highlightWin = (winningCells) => {
             winningCells.forEach(cell => cell.classList.add("winning"));
             document.getElementById("bingo-modal").style.display = "block";
+            winCount++;
+            document.getElementById("win-counter").innerText = winCount;
         };
         
         const renderBingoCard = (card) => {
