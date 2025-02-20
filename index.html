@@ -120,6 +120,11 @@
             document.getElementById("win-counter").innerText = winCount;
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             playSound("win-sound");
+
+            // Automatically reset the game after 3 seconds
+            setTimeout(() => {
+                resetGame();
+            }, 3000);
         };
 
         // Reset game
