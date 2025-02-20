@@ -48,6 +48,15 @@
             document.getElementById("bingo-modal").style.display = "block";
             winCount++;
             document.getElementById("win-counter").innerText = winCount;
+            setTimeout(resetGame, 10000);
+        };
+        
+        const resetGame = () => {
+            document.getElementById("bingo-modal").style.display = "none";
+            document.querySelector("table").remove();
+            let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump", "Absolutely", "Never", "Why not?", "Exactly", "Interesting", "Tell me more", "I see", "Not sure", "Of course", "Let's go", "Cool", "Sounds good", "No way", "Unbelievable", "Fantastic", "Incredible", "Wow"];
+            let card = generateBingoCard(phrases);
+            renderBingoCard(card);
         };
         
         const renderBingoCard = (card) => {
