@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo Game</title>
+    <title>Bingo Game - Online Multiplayer</title>
     <style>
         body.dark-mode { background-color: #222; color: white; }
         table { border-collapse: collapse; margin: 20px auto; }
@@ -14,20 +14,42 @@
         .winning { background-color: lightgreen; }
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 2px solid black; }
         .dark-mode .modal { background: #444; color: white; border-color: white; }
+        .player-turn { font-weight: bold; margin: 10px; }
     </style>
 </head>
 <body>
-    <button onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">Toggle Dark Mode</button>
-    <button onclick="resetGame()">New Game</button>
+    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
     <div id="bingo-modal" class="modal">
-        <p>Bingo! You won!</p>
-        <button onclick="closeModal()" aria-label="Close Modal">Close</button>
+        <p>Bingo! <span id="winning-player"></span> won!</p>
+        <button onclick="closeModal()">Close</button>
     </div>
-    <p>Wins: <span id="win-counter">0</span></p>
+    <p>Player 1 Wins: <span id="player1-wins">0</span></p>
+    <p>Player 2 Wins: <span id="player2-wins">0</span></p>
+    <p class="player-turn">Current Turn: <span id="current-player">Player 1</span></p>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3xs6TDhTLdaIGpvsYLV_E_dvDKsEH43k",
+            authDomain: "doug-taylor-bingo-1c54e.firebaseapp.com",
+            projectId: "doug-taylor-bingo-1c54e",
+            storageBucket: "doug-taylor-bingo-1c54e.firebasestorage.app",
+            messagingSenderId: "344127693759",
+            appId: "1:344127693759:web:5a5d5616b46c372bc9f70a"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         let tableCells = [];
-        let winCount = 0;
-        
+        let player1Wins = 0;
+        let player2Wins = 0;
+        let currentPlayer = 1; // 1 for Player 1, 2 for Player 2
+        let playerId = Math.random().toString(36).substring(7); // Unique ID for each player
+        let gameId = "bingo-game-1"; // Unique game ID (can be dynamic)
+
         const shuffleArray = (array) => {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -35,7 +57,7 @@
             }
             return array;
         };
-        
+
         const generateBingoCard = (phrases) => {
             let shuffledPhrases = shuffleArray(phrases).slice(0, 24);
             let card = [];
@@ -48,7 +70,7 @@
             }
             return card;
         };
-        
+
         const checkRows = () => {
             for (let row of tableCells) {
                 if (row.every(cell => cell.classList.contains("marked"))) {
@@ -57,7 +79,7 @@
             }
             return false;
         };
-        
+
         const checkColumns = () => {
             for (let i = 0; i < 5; i++) {
                 if (tableCells.every(row => row[i].classList.contains("marked"))) {
@@ -66,7 +88,7 @@
             }
             return false;
         };
-        
+
         const checkDiagonals = () => {
             if (tableCells.every((row, idx) => row[idx].classList.contains("marked"))) {
                 return highlightWin(tableCells.map((row, idx) => row[idx]));
@@ -76,21 +98,28 @@
             }
             return false;
         };
-        
+
         const checkWinCondition = () => {
             if (checkRows() || checkColumns() || checkDiagonals()) {
                 return true;
             }
             return false;
         };
-        
+
         const highlightWin = (winningCells) => {
             winningCells.forEach(cell => cell.classList.add("winning"));
             document.getElementById("bingo-modal").style.display = "block";
-            winCount++;
-            document.getElementById("win-counter").innerText = winCount;
+            document.getElementById("winning-player").innerText = `Player ${currentPlayer}`;
+            if (currentPlayer === 1) {
+                player1Wins++;
+                document.getElementById("player1-wins").innerText = player1Wins;
+            } else {
+                player2Wins++;
+                document.getElementById("player2-wins").innerText = player2Wins;
+            }
+            setTimeout(resetGame, 5000);
         };
-        
+
         const resetGame = () => {
             document.getElementById("bingo-modal").style.display = "none";
             document.querySelector("table").remove();
@@ -98,7 +127,7 @@
             let card = generateBingoCard(phrases);
             renderBingoCard(card);
         };
-        
+
         const renderBingoCard = (card) => {
             let table = document.createElement("table");
             let letters = ["B", "I", "N", "G", "O"];
@@ -110,7 +139,7 @@
                 headerRow.appendChild(th);
             });
             table.appendChild(headerRow);
-            
+
             for (let i = 0; i < 5; i++) {
                 let row = document.createElement("tr");
                 tableCells[i] = [];
@@ -120,7 +149,13 @@
                     cell.addEventListener("click", () => {
                         if (!cell.classList.contains("marked")) {
                             cell.classList.add("marked");
-                            checkWinCondition();
+                            if (checkWinCondition()) {
+                                return;
+                            }
+                            currentPlayer = currentPlayer === 1 ? 2 : 1; // Switch players
+                            document.getElementById("current-player").innerText = `Player ${currentPlayer}`;
+                            // Update Firebase with the new game state
+                            updateFirebase();
                         }
                     });
                     tableCells[i].push(cell);
@@ -130,15 +165,41 @@
             }
             document.body.appendChild(table);
         };
-        
+
+        const updateFirebase = () => {
+            let gameState = {
+                currentPlayer: currentPlayer,
+                tableCells: tableCells.map(row => row.map(cell => cell.classList.contains("marked")))
+            };
+            database.ref(`games/${gameId}`).set(gameState);
+        };
+
         const toggleDarkMode = () => {
             document.body.classList.toggle("dark-mode");
         };
-        
+
         const closeModal = () => {
             document.getElementById("bingo-modal").style.display = "none";
         };
-        
+
+        // Listen for changes in Firebase
+        database.ref(`games/${gameId}`).on("value", (snapshot) => {
+            const gameState = snapshot.val();
+            if (gameState) {
+                currentPlayer = gameState.currentPlayer;
+                document.getElementById("current-player").innerText = `Player ${currentPlayer}`;
+                for (let i = 0; i < 5; i++) {
+                    for (let j = 0; j < 5; j++) {
+                        if (gameState.tableCells[i][j]) {
+                            tableCells[i][j].classList.add("marked");
+                        } else {
+                            tableCells[i][j].classList.remove("marked");
+                        }
+                    }
+                }
+            }
+        });
+
         document.addEventListener("DOMContentLoaded", () => {
             let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump", "Absolutely", "Never", "Why not?", "Exactly", "Interesting", "Tell me more", "I see", "Not sure", "Of course", "Let's go", "Cool", "Sounds good", "No way", "Unbelievable", "Fantastic", "Incredible", "Wow"];
             let card = generateBingoCard(phrases);
