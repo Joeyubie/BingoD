@@ -8,7 +8,7 @@
         body.dark-mode { background-color: #222; color: white; }
         table { border-collapse: collapse; margin: 20px auto; }
         th, td { 
-            border: 3px solid black; 
+            border: 1px solid black; 
             padding: 10px; 
             text-align: center; 
             cursor: pointer; 
@@ -120,7 +120,22 @@
             document.getElementById("modal-message").innerText = `Bingo! You won in ${getElapsedTime()}!`;
             winCount++;
             document.getElementById("win-counter").innerText = winCount;
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+
+            // Intense confetti effect
+            for (let i = 0; i < 10; i++) { // 10 bursts of confetti
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 500, // A LOT of particles
+                        spread: 360,       // Full 360-degree spread
+                        origin: { y: 0.6 }, // Slightly above the bottom
+                        startVelocity: 50, // Faster particles
+                        gravity: 1.5,      // Heavier gravity for more chaos
+                        scalar: 1.5,       // Larger particles
+                        ticks: 300,        // Longer-lasting particles
+                    });
+                }, i * 200); // Staggered bursts for extra chaos
+            }
+
             playSound("win-sound");
 
             // Automatically reset the game after 3 seconds
@@ -134,7 +149,7 @@
             startTimer();
             document.getElementById("bingo-modal").style.display = "none";
             document.querySelector("table")?.remove();
-            let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump*", "No water on desks", "I'll have to look that up", "go to ebay", "due by the end of class", "get out a sheet of paper", "you don't need your laptops", "*Is on his phone*", "*tells a fake story*", "*gets us excited for senior trip*", "*glasses on top of his head*", "I'll have to look that up", "*Scratches his head*", "*Goes on rant*", "*Gives out gum*", "*Goes on fox news*", "*Talks about Kamala*", "*Just strait up lies about something*"];
+            let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump", "Absolutely", "Never", "Why not?", "Exactly", "Interesting", "Tell me more", "I see", "Not sure", "Of course", "Let's go", "Cool", "Sounds good", "No way", "Unbelievable", "Fantastic", "Incredible", "Wow"];
             let card = generateBingoCard(phrases);
             renderBingoCard(card);
         };
