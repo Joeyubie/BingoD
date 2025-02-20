@@ -8,6 +8,8 @@
         body.dark-mode { background-color: #222; color: white; }
         table { border-collapse: collapse; margin: 20px auto; }
         th, td { border: 1px solid black; padding: 10px; text-align: center; cursor: pointer; }
+        td:hover { background-color: #f0f0f0; }
+        .dark-mode td:hover { background-color: #555; }
         .marked { background-color: yellow; }
         .winning { background-color: lightgreen; }
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 2px solid black; }
@@ -15,32 +17,71 @@
     </style>
 </head>
 <body>
-    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+    <button onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">Toggle Dark Mode</button>
+    <button onclick="resetGame()">New Game</button>
     <div id="bingo-modal" class="modal">
         <p>Bingo! You won!</p>
-        <button onclick="closeModal()">Close</button>
+        <button onclick="closeModal()" aria-label="Close Modal">Close</button>
     </div>
     <p>Wins: <span id="win-counter">0</span></p>
     <script>
         let tableCells = [];
         let winCount = 0;
         
+        const shuffleArray = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        };
+        
         const generateBingoCard = (phrases) => {
-            let shuffledPhrases = phrases.sort(() => 0.5 - Math.random()).slice(0, 25);
+            let shuffledPhrases = shuffleArray(phrases).slice(0, 24);
             let card = [];
             for (let i = 0; i < 5; i++) {
-                card.push(shuffledPhrases.slice(i * 5, (i + 1) * 5));
+                let row = shuffledPhrases.slice(i * 5, (i + 1) * 5);
+                if (i === 2) {
+                    row.splice(2, 0, "Free Space");
+                }
+                card.push(row);
             }
             return card;
         };
         
-        const checkWinCondition = () => {
-            for (let i = 0; i < 5; i++) {
-                if (tableCells[i].every(cell => cell.classList.contains("marked"))) return highlightWin(tableCells[i]);
-                if (tableCells.every(row => row[i].classList.contains("marked"))) return highlightWin(tableCells.map(row => row[i]));
+        const checkRows = () => {
+            for (let row of tableCells) {
+                if (row.every(cell => cell.classList.contains("marked"))) {
+                    return highlightWin(row);
+                }
             }
-            if (tableCells.every((row, idx) => row[idx].classList.contains("marked"))) return highlightWin(tableCells.map((row, idx) => row[idx]));
-            if (tableCells.every((row, idx) => row[4 - idx].classList.contains("marked"))) return highlightWin(tableCells.map((row, idx) => row[4 - idx]));
+            return false;
+        };
+        
+        const checkColumns = () => {
+            for (let i = 0; i < 5; i++) {
+                if (tableCells.every(row => row[i].classList.contains("marked"))) {
+                    return highlightWin(tableCells.map(row => row[i]));
+                }
+            }
+            return false;
+        };
+        
+        const checkDiagonals = () => {
+            if (tableCells.every((row, idx) => row[idx].classList.contains("marked"))) {
+                return highlightWin(tableCells.map((row, idx) => row[idx]));
+            }
+            if (tableCells.every((row, idx) => row[4 - idx].classList.contains("marked"))) {
+                return highlightWin(tableCells.map((row, idx) => row[4 - idx]));
+            }
+            return false;
+        };
+        
+        const checkWinCondition = () => {
+            if (checkRows() || checkColumns() || checkDiagonals()) {
+                return true;
+            }
+            return false;
         };
         
         const highlightWin = (winningCells) => {
@@ -48,7 +89,6 @@
             document.getElementById("bingo-modal").style.display = "block";
             winCount++;
             document.getElementById("win-counter").innerText = winCount;
-            setTimeout(resetGame, 10000);
         };
         
         const resetGame = () => {
@@ -78,8 +118,10 @@
                     let cell = document.createElement("td");
                     cell.innerText = card[i][j];
                     cell.addEventListener("click", () => {
-                        cell.classList.toggle("marked");
-                        checkWinCondition();
+                        if (!cell.classList.contains("marked")) {
+                            cell.classList.add("marked");
+                            checkWinCondition();
+                        }
                     });
                     tableCells[i].push(cell);
                     row.appendChild(cell);
