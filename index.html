@@ -7,27 +7,49 @@
     <style>
         body.dark-mode { background-color: #222; color: white; }
         table { border-collapse: collapse; margin: 20px auto; }
-        th, td { border: 1px solid black; padding: 10px; text-align: center; cursor: pointer; }
+        th, td { 
+            border: 1px solid black; 
+            padding: 10px; 
+            text-align: center; 
+            cursor: pointer; 
+            width: 100px; /* Fixed width */
+            height: 100px; /* Fixed height */
+            box-sizing: border-box; /* Ensure padding is included in dimensions */
+        }
         td:hover { background-color: #f0f0f0; }
         .dark-mode td:hover { background-color: #555; }
         .marked { background-color: yellow; }
         .winning { background-color: lightgreen; }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 2px solid black; }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: white; 
+            padding: 20px; 
+            border: 2px solid black; 
+            z-index: 1000; 
+        }
         .dark-mode .modal { background: #444; color: white; border-color: white; }
+        button { margin: 5px; }
     </style>
 </head>
 <body>
     <button onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">Toggle Dark Mode</button>
     <button onclick="resetGame()">New Game</button>
-    <div id="bingo-modal" class="modal">
-        <p>Bingo! You won!</p>
+    <div id="bingo-modal" class="modal" aria-hidden="true" tabindex="-1">
+        <p id="modal-message">Bingo! You won!</p>
         <button onclick="closeModal()" aria-label="Close Modal">Close</button>
     </div>
     <p>Wins: <span id="win-counter">0</span></p>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
         let tableCells = [];
         let winCount = 0;
-        
+        let startTime;
+
+        // Shuffle array function
         const shuffleArray = (array) => {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -35,7 +57,8 @@
             }
             return array;
         };
-        
+
+        // Generate Bingo card
         const generateBingoCard = (phrases) => {
             let shuffledPhrases = shuffleArray(phrases).slice(0, 24);
             let card = [];
@@ -48,7 +71,8 @@
             }
             return card;
         };
-        
+
+        // Check rows for a win
         const checkRows = () => {
             for (let row of tableCells) {
                 if (row.every(cell => cell.classList.contains("marked"))) {
@@ -57,7 +81,8 @@
             }
             return false;
         };
-        
+
+        // Check columns for a win
         const checkColumns = () => {
             for (let i = 0; i < 5; i++) {
                 if (tableCells.every(row => row[i].classList.contains("marked"))) {
@@ -66,7 +91,8 @@
             }
             return false;
         };
-        
+
+        // Check diagonals for a win
         const checkDiagonals = () => {
             if (tableCells.every((row, idx) => row[idx].classList.contains("marked"))) {
                 return highlightWin(tableCells.map((row, idx) => row[idx]));
@@ -76,29 +102,37 @@
             }
             return false;
         };
-        
+
+        // Check win condition
         const checkWinCondition = () => {
             if (checkRows() || checkColumns() || checkDiagonals()) {
                 return true;
             }
             return false;
         };
-        
+
+        // Highlight winning cells and show modal
         const highlightWin = (winningCells) => {
             winningCells.forEach(cell => cell.classList.add("winning"));
             document.getElementById("bingo-modal").style.display = "block";
+            document.getElementById("modal-message").innerText = `Bingo! You won in ${getElapsedTime()}!`;
             winCount++;
             document.getElementById("win-counter").innerText = winCount;
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            playSound("win-sound");
         };
-        
+
+        // Reset game
         const resetGame = () => {
+            startTimer();
             document.getElementById("bingo-modal").style.display = "none";
-            document.querySelector("table").remove();
+            document.querySelector("table")?.remove();
             let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump", "Absolutely", "Never", "Why not?", "Exactly", "Interesting", "Tell me more", "I see", "Not sure", "Of course", "Let's go", "Cool", "Sounds good", "No way", "Unbelievable", "Fantastic", "Incredible", "Wow"];
             let card = generateBingoCard(phrases);
             renderBingoCard(card);
         };
-        
+
+        // Render Bingo card
         const renderBingoCard = (card) => {
             let table = document.createElement("table");
             let letters = ["B", "I", "N", "G", "O"];
@@ -110,7 +144,7 @@
                 headerRow.appendChild(th);
             });
             table.appendChild(headerRow);
-            
+
             for (let i = 0; i < 5; i++) {
                 let row = document.createElement("tr");
                 tableCells[i] = [];
@@ -120,6 +154,7 @@
                     cell.addEventListener("click", () => {
                         if (!cell.classList.contains("marked")) {
                             cell.classList.add("marked");
+                            playSound("click-sound");
                             checkWinCondition();
                         }
                     });
@@ -130,20 +165,51 @@
             }
             document.body.appendChild(table);
         };
-        
+
+        // Toggle dark mode
         const toggleDarkMode = () => {
             document.body.classList.toggle("dark-mode");
+            localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
         };
-        
+
+        // Close modal
         const closeModal = () => {
             document.getElementById("bingo-modal").style.display = "none";
         };
-        
+
+        // Play sound
+        const playSound = (id) => {
+            const sound = document.getElementById(id);
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play();
+            }
+        };
+
+        // Start timer
+        const startTimer = () => {
+            startTime = new Date();
+        };
+
+        // Get elapsed time
+        const getElapsedTime = () => {
+            if (!startTime) return "0:00";
+            const elapsed = new Date() - startTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+        };
+
+        // Initialize game
         document.addEventListener("DOMContentLoaded", () => {
-            let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump", "Absolutely", "Never", "Why not?", "Exactly", "Interesting", "Tell me more", "I see", "Not sure", "Of course", "Let's go", "Cool", "Sounds good", "No way", "Unbelievable", "Fantastic", "Incredible", "Wow"];
-            let card = generateBingoCard(phrases);
-            renderBingoCard(card);
+            if (localStorage.getItem("darkMode") === "true") {
+                document.body.classList.add("dark-mode");
+            }
+            resetGame();
         });
     </script>
+    <!-- Add audio elements for sounds -->
+    <audio id="click-sound" src="click.mp3"></audio>
+    <audio id="win-sound" src="win.mp3"></audio>
 </body>
 </html>
