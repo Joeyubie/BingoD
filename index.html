@@ -49,8 +49,11 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
         let tableCells = [];
-        let winCount = 0;
         let startTime;
+
+        // Load win count from localStorage or initialize to 0
+        let winCount = parseInt(localStorage.getItem("winCount")) || 0;
+        document.getElementById("win-counter").innerText = winCount;
 
         // Shuffle array function
         const shuffleArray = (array) => {
@@ -121,6 +124,9 @@
             document.getElementById("modal-message").innerText = `Bingo! You won in ${getElapsedTime()}!`;
             winCount++;
             document.getElementById("win-counter").innerText = winCount;
+
+            // Save win count to localStorage
+            localStorage.setItem("winCount", winCount);
 
             // Intense confetti effect
             for (let i = 0; i < 10; i++) { // 10 bursts of confetti
