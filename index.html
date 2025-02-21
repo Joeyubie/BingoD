@@ -132,7 +132,7 @@
             for (let i = 0; i < 10; i++) { // 10 bursts of confetti
                 setTimeout(() => {
                     confetti({
-                        particleCount: 500, // A LOT of particles
+                        particleCount: 100, // particles
                         spread: 360,       // Full 360-degree spread
                         origin: { y: 0.6 }, // Slightly above the bottom
                         startVelocity: 50, // Faster particles
@@ -156,7 +156,7 @@
             startTimer();
             document.getElementById("bingo-modal").style.display = "none";
             document.querySelector("table")?.remove();
-            let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump*", "*talks about Kamala*", "*lies for no reason*", "I'll have to look that up", "*he hits the doug shake*", "*puts glasses on his head*", "Tell me more", "*just on his phone*", "That's all for today gang", "due by the end of class", "you don't need your computers today", "*goes on a rant*", "*yawns and touches his head*", "*drinks 32oz gas station drink*", "I'll give you a piece of gum", "class", "quick discussion", "*makes someone sing*"];
+            let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump*", "*talks about Kamala*", "*lies for no reason*", "I'll have to look that up", "*he hits the doug shake*", "*puts glasses on his head*", "Tell me more", "*just on his phone*", "That's all for today gang", "due by the end of class", "you don't need your computers today", "*goes on a rant*", "*yawns and touches his head*", "*drinks 32oz gas station drink*", "I'll give you a piece of gum", "class", "quick discussion", "*makes someone sing*", "Put your drinks down", "hey Kiddos", "talks about huskie store"];
             let card = generateBingoCard(phrases);
             renderBingoCard(card);
         };
