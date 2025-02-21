@@ -5,52 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bingo Game</title>
     <style>
-        body.dark-mode { background-color: #222; color: white; }
-        table { border-collapse: collapse; margin: 20px auto; }
-        th, td { 
-            border: 1px solid black; 
-            padding: 10px; 
-            text-align: center; 
-            cursor: pointer; 
-            width: 100px; /* Fixed width */
-            height: 100px; /* Fixed height */
-            box-sizing: border-box; /* Ensure padding is included in dimensions */
-        }
-        .dark-mode th, .dark-mode td { border-color: white; } /* White borders in dark mode */
-        td:hover { background-color: #f0f0f0; }
-        .dark-mode td:hover { background-color: #555; }
-        .marked { background-color: yellow; }
-        .dark-mode .marked { background-color: yellow; color: black; } /* Black text in dark mode for marked squares */
-        .winning { background-color: lightgreen; }
-        .dark-mode .winning { background-color: lightgreen; color: black; }
-        .modal { 
-            display: none; 
-            position: fixed; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            background: white; 
-            padding: 20px; 
-            border: 2px solid black; 
-            z-index: 1000; 
-        }
-        .dark-mode .modal { background: #444; color: white; border-color: white; }
-        button { margin: 5px; }
+        /* Your existing CSS styles */
     </style>
 </head>
 <body>
     <button onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">Toggle Dark Mode</button>
     <button onclick="resetGame()">New Game</button>
-    <div id="bingo-modal" class="modal" aria-hidden="true" tabindex="-1">
+    <div id="bingo-modal" class="modal" aria-hidden="true" tabindex="-1" aria-live="polite">
         <p id="modal-message">Bingo! You won!</p>
         <button onclick="closeModal()" aria-label="Close Modal">Close</button>
     </div>
     <p>Wins: <span id="win-counter">0</span></p>
+    <p>Time: <span id="timer">0:00</span></p>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
         let tableCells = [];
-        let winCount = 0;
         let startTime;
+        let timerInterval;
+
+        // Retrieve win count from localStorage or initialize to 0
+        let winCount = parseInt(localStorage.getItem("winCount")) || 0;
+        document.getElementById("win-counter").innerText = winCount;
 
         // Shuffle array function
         const shuffleArray = (array) => {
@@ -75,28 +50,21 @@
             return card;
         };
 
-        // Check rows for a win
-        const checkRows = () => {
+        // Check for a win
+        const checkWin = () => {
+            // Check rows
             for (let row of tableCells) {
                 if (row.every(cell => cell.classList.contains("marked"))) {
                     return highlightWin(row);
                 }
             }
-            return false;
-        };
-
-        // Check columns for a win
-        const checkColumns = () => {
+            // Check columns
             for (let i = 0; i < 5; i++) {
                 if (tableCells.every(row => row[i].classList.contains("marked"))) {
                     return highlightWin(tableCells.map(row => row[i]));
                 }
             }
-            return false;
-        };
-
-        // Check diagonals for a win
-        const checkDiagonals = () => {
+            // Check diagonals
             if (tableCells.every((row, idx) => row[idx].classList.contains("marked"))) {
                 return highlightWin(tableCells.map((row, idx) => row[idx]));
             }
@@ -106,38 +74,23 @@
             return false;
         };
 
-        // Check win condition
-        const checkWinCondition = () => {
-            if (checkRows() || checkColumns() || checkDiagonals()) {
-                return true;
-            }
-            return false;
-        };
-
         // Highlight winning cells and show modal
         const highlightWin = (winningCells) => {
             winningCells.forEach(cell => cell.classList.add("winning"));
             document.getElementById("bingo-modal").style.display = "block";
             document.getElementById("modal-message").innerText = `Bingo! You won in ${getElapsedTime()}!`;
+
+            // Increment win count and update localStorage
             winCount++;
+            localStorage.setItem("winCount", winCount);
             document.getElementById("win-counter").innerText = winCount;
 
-            // Intense confetti effect
-            for (let i = 0; i < 10; i++) { // 10 bursts of confetti
-                setTimeout(() => {
-                    confetti({
-                        particleCount: 500, // A LOT of particles
-                        spread: 360,       // Full 360-degree spread
-                        origin: { y: 0.6 }, // Slightly above the bottom
-                        startVelocity: 50, // Faster particles
-                        gravity: 1.5,      // Heavier gravity for more chaos
-                        scalar: 1.5,       // Larger particles
-                        ticks: 300,        // Longer-lasting particles
-                    });
-                }, i * 200); // Staggered bursts for extra chaos
-            }
-
-            playSound("win-sound");
+            // Confetti effect
+            confetti({
+                particleCount: 300,
+                spread: 360,
+                origin: { y: 0.6 },
+            });
 
             // Automatically reset the game after 3 seconds
             setTimeout(() => {
@@ -147,6 +100,7 @@
 
         // Reset game
         const resetGame = () => {
+            clearInterval(timerInterval);
             startTimer();
             document.getElementById("bingo-modal").style.display = "none";
             document.querySelector("table")?.remove();
@@ -174,11 +128,13 @@
                 for (let j = 0; j < 5; j++) {
                     let cell = document.createElement("td");
                     cell.innerText = card[i][j];
+                    if (i === 2 && j === 2) {
+                        cell.classList.add("marked"); // Mark "Free Space"
+                    }
                     cell.addEventListener("click", () => {
                         if (!cell.classList.contains("marked")) {
                             cell.classList.add("marked");
-                            playSound("click-sound");
-                            checkWinCondition();
+                            checkWin();
                         }
                     });
                     tableCells[i].push(cell);
@@ -200,18 +156,12 @@
             document.getElementById("bingo-modal").style.display = "none";
         };
 
-        // Play sound
-        const playSound = (id) => {
-            const sound = document.getElementById(id);
-            if (sound) {
-                sound.currentTime = 0;
-                sound.play();
-            }
-        };
-
         // Start timer
         const startTimer = () => {
             startTime = new Date();
+            timerInterval = setInterval(() => {
+                document.getElementById("timer").innerText = getElapsedTime();
+            }, 1000);
         };
 
         // Get elapsed time
@@ -231,8 +181,5 @@
             resetGame();
         });
     </script>
-    <!-- Add audio elements for sounds -->
-    <audio id="click-sound" src="click.mp3"></audio>
-    <audio id="win-sound" src="win.mp3"></audio>
 </body>
 </html>
