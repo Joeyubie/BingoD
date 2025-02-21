@@ -5,7 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bingo Game</title>
     <style>
-        /* Your existing CSS styles */
+        body.dark-mode { background-color: #222; color: white; }
+        table { border-collapse: collapse; margin: 20px auto; }
+        th, td { 
+            border: 1px solid black; 
+            padding: 10px; 
+            text-align: center; 
+            cursor: pointer; 
+            width: 100px; /* Fixed width */
+            height: 100px; /* Fixed height */
+            box-sizing: border-box; /* Ensure padding is included in dimensions */
+        }
+        .dark-mode th, .dark-mode td { border-color: white; } /* White borders in dark mode */
+        td:hover { background-color: #f0f0f0; }
+        .dark-mode td:hover { background-color: #555; }
+        .marked { background-color: yellow; }
+        .dark-mode .marked { background-color: yellow; color: black; } /* Black text in dark mode for marked squares */
+        .winning { background-color: lightgreen; }
+        .dark-mode .winning { background-color: lightgreen; color: black; }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: white; 
+            padding: 20px; 
+            border: 2px solid black; 
+            z-index: 1000; 
+        }
+        .dark-mode .modal { background: #444; color: white; border-color: white; }
+        button { margin: 5px; }
     </style>
 </head>
 <body>
@@ -20,12 +50,9 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
         let tableCells = [];
+        let winCount = 0;
         let startTime;
         let timerInterval;
-
-        // Retrieve win count from localStorage or initialize to 0
-        let winCount = parseInt(localStorage.getItem("winCount")) || 0;
-        document.getElementById("win-counter").innerText = winCount;
 
         // Shuffle array function
         const shuffleArray = (array) => {
@@ -79,10 +106,7 @@
             winningCells.forEach(cell => cell.classList.add("winning"));
             document.getElementById("bingo-modal").style.display = "block";
             document.getElementById("modal-message").innerText = `Bingo! You won in ${getElapsedTime()}!`;
-
-            // Increment win count and update localStorage
             winCount++;
-            localStorage.setItem("winCount", winCount);
             document.getElementById("win-counter").innerText = winCount;
 
             // Confetti effect
