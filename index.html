@@ -33,17 +33,52 @@
             padding: 20px; 
             border: 2px solid black; 
             z-index: 1000; 
+            max-width: 400px;
+            width: 90%;
         }
         .dark-mode .modal { background: #444; color: white; border-color: white; }
         button { margin: 5px; }
+        .setting { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        textarea { width: 100%; height: 100px; }
     </style>
 </head>
 <body>
-    <button onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">Toggle Dark Mode</button>
+    <!-- Removed the old "Toggle Dark Mode" button -->
     <button onclick="resetGame()">New Game</button>
+    <button onclick="openSettings()">Settings</button>
     <div id="bingo-modal" class="modal" aria-hidden="true" tabindex="-1">
         <p id="modal-message">Bingo! You won!</p>
         <button onclick="closeModal()" aria-label="Close Modal">Close</button>
+    </div>
+    <div id="settings-modal" class="modal" aria-hidden="true" tabindex="-1">
+        <h2>Settings</h2>
+        <div class="setting">
+            <label for="dark-mode">Dark Mode:</label>
+            <input type="checkbox" id="dark-mode" name="dark-mode">
+        </div>
+        <div class="setting">
+            <label for="sound-effects">Enable Sound Effects:</label>
+            <input type="checkbox" id="sound-effects" name="sound-effects" checked>
+        </div>
+        <div class="setting">
+            <label for="confetti-intensity">Confetti Intensity:</label>
+            <select id="confetti-intensity" name="confetti-intensity">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+        <div class="setting">
+            <label for="custom-phrases">Custom Phrases (one per line):</label>
+            <textarea id="custom-phrases" name="custom-phrases"></textarea>
+        </div>
+        <div class="setting">
+            <label for="auto-reset-delay">Auto-Reset Delay (seconds):</label>
+            <input type="number" id="auto-reset-delay" name="auto-reset-delay" value="3" min="1">
+        </div>
+        <button onclick="saveSettings()">Save</button>
+        <button onclick="closeSettings()">Close</button>
     </div>
     <p>Wins: <span id="win-counter">0</span></p>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
@@ -54,6 +89,15 @@
         // Load win count from localStorage or initialize to 0
         let winCount = parseInt(localStorage.getItem("winCount")) || 0;
         document.getElementById("win-counter").innerText = winCount;
+
+        // Default phrases
+        const defaultPhrases = [
+            "Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*",
+            "Could you speak up?", "*Glazes Trump*", "*talks about Kamala*", "*lies for no reason*", "I'll have to look that up",
+            "*he hits the doug shake*", "*puts glasses on his head*", "Tell me more", "*just on his phone*", "That's all for today gang",
+            "due by the end of class", "you don't need your computers today", "*goes on a rant*", "*yawns and touches his head*",
+            "*drinks 32oz gas station drink*", "I'll give you a piece of gum", "class", "quick discussion", "*makes someone sing*"
+        ];
 
         // Shuffle array function
         const shuffleArray = (array) => {
@@ -128,27 +172,34 @@
             // Save win count to localStorage
             localStorage.setItem("winCount", winCount);
 
-            // Intense confetti effect
-            for (let i = 0; i < 10; i++) { // 10 bursts of confetti
+            // Confetti effect based on intensity
+            const confettiIntensity = localStorage.getItem("confettiIntensity") || "medium";
+            const confettiConfig = {
+                low: { particleCount: 100, spread: 180 },
+                medium: { particleCount: 500, spread: 360 },
+                high: { particleCount: 1000, spread: 360 }
+            }[confettiIntensity];
+
+            for (let i = 0; i < 10; i++) {
                 setTimeout(() => {
                     confetti({
-                        particleCount: 500, // A LOT of particles
-                        spread: 360,       // Full 360-degree spread
-                        origin: { y: 0.6 }, // Slightly above the bottom
-                        startVelocity: 50, // Faster particles
-                        gravity: 1.5,      // Heavier gravity for more chaos
-                        scalar: 1.5,       // Larger particles
-                        ticks: 300,        // Longer-lasting particles
+                        ...confettiConfig,
+                        origin: { y: 0.6 },
+                        startVelocity: 50,
+                        gravity: 1.5,
+                        scalar: 1.5,
+                        ticks: 300,
                     });
-                }, i * 200); // Staggered bursts for extra chaos
+                }, i * 200);
             }
 
             playSound("win-sound");
 
-            // Automatically reset the game after 3 seconds
+            // Auto-reset delay
+            const autoResetDelay = parseInt(localStorage.getItem("autoResetDelay")) || 3000;
             setTimeout(() => {
                 resetGame();
-            }, 3000);
+            }, autoResetDelay);
         };
 
         // Reset game
@@ -156,7 +207,7 @@
             startTimer();
             document.getElementById("bingo-modal").style.display = "none";
             document.querySelector("table")?.remove();
-            let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump*", "*talks about Kamala*", "*lies for no reason*", "I'll have to look that up", "*he hits the doug shake*", "*puts glasses on his head*", "Tell me more", "*just on his phone*", "That's all for today gang", "due by the end of class", "you don't need your computers today", "*goes on a rant*", "*yawns and touches his head*", "*drinks 32oz gas station drink*", "I'll give you a piece of gum", "class", "quick discussion", "*makes someone sing*"];
+            let phrases = localStorage.getItem("customPhrases")?.split("\n").filter(phrase => phrase.trim()) || defaultPhrases;
             let card = generateBingoCard(phrases);
             renderBingoCard(card);
         };
@@ -195,12 +246,6 @@
             document.body.appendChild(table);
         };
 
-        // Toggle dark mode
-        const toggleDarkMode = () => {
-            document.body.classList.toggle("dark-mode");
-            localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
-        };
-
         // Close modal
         const closeModal = () => {
             document.getElementById("bingo-modal").style.display = "none";
@@ -208,10 +253,12 @@
 
         // Play sound
         const playSound = (id) => {
-            const sound = document.getElementById(id);
-            if (sound) {
-                sound.currentTime = 0;
-                sound.play();
+            if (localStorage.getItem("soundEffects") !== "false") {
+                const sound = document.getElementById(id);
+                if (sound) {
+                    sound.currentTime = 0;
+                    sound.play();
+                }
             }
         };
 
@@ -229,6 +276,56 @@
             return `${minutes}:${seconds.toString().padStart(2, "0")}`;
         };
 
+        // Open settings modal
+        const openSettings = () => {
+            document.getElementById("settings-modal").style.display = "block";
+            loadSettings();
+        };
+
+        // Close settings modal
+        const closeSettings = () => {
+            document.getElementById("settings-modal").style.display = "none";
+        };
+
+        // Load saved settings
+        const loadSettings = () => {
+            const darkMode = localStorage.getItem("darkMode") === "true";
+            const soundEffects = localStorage.getItem("soundEffects") !== "false";
+            const confettiIntensity = localStorage.getItem("confettiIntensity") || "medium";
+            const customPhrases = localStorage.getItem("customPhrases") || "";
+            const autoResetDelay = localStorage.getItem("autoResetDelay") || "3";
+
+            document.getElementById("dark-mode").checked = darkMode;
+            document.getElementById("sound-effects").checked = soundEffects;
+            document.getElementById("confetti-intensity").value = confettiIntensity;
+            document.getElementById("custom-phrases").value = customPhrases;
+            document.getElementById("auto-reset-delay").value = autoResetDelay;
+
+            // Apply dark mode immediately
+            document.body.classList.toggle("dark-mode", darkMode);
+        };
+
+        // Save settings to localStorage
+        const saveSettings = () => {
+            const darkMode = document.getElementById("dark-mode").checked;
+            const soundEffects = document.getElementById("sound-effects").checked;
+            const confettiIntensity = document.getElementById("confetti-intensity").value;
+            const customPhrases = document.getElementById("custom-phrases").value;
+            const autoResetDelay = document.getElementById("auto-reset-delay").value;
+
+            localStorage.setItem("darkMode", darkMode);
+            localStorage.setItem("soundEffects", soundEffects);
+            localStorage.setItem("confettiIntensity", confettiIntensity);
+            localStorage.setItem("customPhrases", customPhrases);
+            localStorage.setItem("autoResetDelay", autoResetDelay);
+
+            // Apply dark mode immediately
+            document.body.classList.toggle("dark-mode", darkMode);
+
+            alert("Settings saved!");
+            closeSettings();
+        };
+
         // Initialize game
         document.addEventListener("DOMContentLoaded", () => {
             if (localStorage.getItem("darkMode") === "true") {
@@ -242,5 +339,3 @@
     <audio id="win-sound" src="win.mp3"></audio>
 </body>
 </html>
-
-
