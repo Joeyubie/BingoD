@@ -3,6 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo with Chat</title>
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js"></script>
+    <Script> Src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js"></script>
+</head>
+<body>
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bingo Game</title>
     <style>
         body.dark-mode { background-color: #222; color: white; }
@@ -240,5 +252,22 @@
     <!-- Add audio elements for sounds -->
     <audio id="click-sound" src="click.mp3"></audio>
     <audio id="win-sound" src="win.mp3"></audio>
+</body>
+</html>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUzAA93eViPQv1sJKrB31NWRV6OsBgDhY",
+            authDomain: "bingo-with-chat.firebaseapp.com",
+            databaseURL: "https://bingo-with-chat-default-rtdb.firebaseio.com",
+            projectId: "bingo-with-chat",
+            storageBucket: "bingo-with-chat.firebasestorage.app",
+            messagingSenderId: "647355991749",
+            appId: "1:647355991749:web:f4fd67303e352f05cc12ac",
+            measurementId: "G-6EGF7BZET0"
+        };
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+    </script>
 </body>
 </html>
