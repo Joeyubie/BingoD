@@ -3,19 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo with Chat</title>
-    <!-- Add Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js"></script>
-    <Script> Src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js"></script>
-</head>
-<body>
-    <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo Game</title>
+    <title>Bingo With Chat</title>
     <style>
         body.dark-mode { background-color: #222; color: white; }
         table { border-collapse: collapse; margin: 20px auto; }
@@ -49,6 +37,9 @@
         .dark-mode .modal { background: #444; color: white; border-color: white; }
         button { margin: 5px; }
     </style>
+    <!-- Add Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js"></script>
 </head>
 <body>
     <button onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">Toggle Dark Mode</button>
@@ -66,6 +57,39 @@
         // Load win count from localStorage or initialize to 0
         let winCount = parseInt(localStorage.getItem("winCount")) || 0;
         document.getElementById("win-counter").innerText = winCount;
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCUzAA93eViPQv1sJKrB31NWRV6OsBgDhY",
+            authDomain: "bingo-with-chat.firebaseapp.com",
+            databaseURL: "https://bingo-with-chat-default-rtdb.firebaseio.com",
+            projectId: "bingo-with-chat",
+            storageBucket: "bingo-with-chat.firebasestorage.app",
+            messagingSenderId: "647355991749",
+            appId: "1:647355991749:web:f4fd67303e352f05cc12ac",
+            measurementId: "G-6EGF7BZET0"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Reference to the game state in Firebase
+        const gameRef = database.ref("gameState");
+
+        // Listen for changes to the game state
+        gameRef.on("value", (snapshot) => {
+            const gameState = snapshot.val();
+            if (gameState) {
+                // Clear all marked cells
+                tableCells.forEach(row => row.forEach(cell => cell.classList.remove("marked")));
+
+                // Update the UI with the latest game state
+                gameState.markedCells.forEach(({ row, col }) => {
+                    tableCells[row][col].classList.add("marked");
+                });
+            }
+        });
 
         // Shuffle array function
         const shuffleArray = (array) => {
@@ -171,6 +195,11 @@
             let phrases = ["Gang", "Minimize", "look up", "1 minute break", "Just 5 minutes of notes", "*Leaves class for no reason*", "Could you speak up?", "*Glazes Trump*", "*talks about Kamala*", "*lies for no reason*", "I'll have to look that up", "*he hits the doug shake*", "*puts glasses on his head*", "Tell me more", "*just on his phone*", "That's all for today gang", "due by the end of class", "you don't need your computers today", "*goes on a rant*", "*yawns and touches his head*", "*drinks 32oz gas station drink*", "I'll give you a piece of gum", "class", "quick discussion", "*makes someone sing*", "Put your drinks down", "hey Kiddos", "talks about huskie store", "Sarcastic", "*Glazes Elon Musk*", "*talks about Criminal Justice*", "*Talks about Isreal*"];
             let card = generateBingoCard(phrases);
             renderBingoCard(card);
+
+            // Reset game state in Firebase
+            gameRef.set({
+                markedCells: []
+            });
         };
 
         // Render Bingo card
@@ -195,6 +224,8 @@
                     cell.addEventListener("click", () => {
                         if (!cell.classList.contains("marked")) {
                             cell.classList.add("marked");
+                            // Update Firebase with the marked cell
+                            gameRef.child("markedCells").push({ row: i, col: j });
                             playSound("click-sound");
                             checkWinCondition();
                         }
@@ -252,22 +283,5 @@
     <!-- Add audio elements for sounds -->
     <audio id="click-sound" src="click.mp3"></audio>
     <audio id="win-sound" src="win.mp3"></audio>
-</body>
-</html>
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCUzAA93eViPQv1sJKrB31NWRV6OsBgDhY",
-            authDomain: "bingo-with-chat.firebaseapp.com",
-            databaseURL: "https://bingo-with-chat-default-rtdb.firebaseio.com",
-            projectId: "bingo-with-chat",
-            storageBucket: "bingo-with-chat.firebasestorage.app",
-            messagingSenderId: "647355991749",
-            appId: "1:647355991749:web:f4fd67303e352f05cc12ac",
-            measurementId: "G-6EGF7BZET0"
-        };
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-    </script>
 </body>
 </html>
